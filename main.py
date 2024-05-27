@@ -24,8 +24,8 @@ def start_command(message):
 def start_chatting(message):
     player_city = message.text.lower()
     pprint(gc.search_cities(player_city, case_sensitive=False, contains_search=False))
-
-    if not gc.search_cities(player_city, case_sensitive=False, contains_search=False) or player_city in old_cities:
+    founded = gc.search_cities(player_city, case_sensitive=False, contains_search=False)
+    if not founded or player_city in old_cities:
         bot.send_message(message.from_user.id, "Такого города нет или он уже был")
         return
     if len(old_cities):
@@ -34,12 +34,15 @@ def start_chatting(message):
             bot.send_message(message.from_user.id, "Не та буква в начале")
             return
     old_cities.append(player_city)
+    bot.send_location(message.from_user.id, founded[0]["latitude"], founded[0]["longitude"])
     first_let = player_city[-1]
 
     if first_let == "ь" or first_let == "ы" or first_let == "ъ":
         first_let = player_city[-2]
     bot.send_message(message.from_user.id, f"Мне на {first_let}")
-    bot.send_message(message.from_user.id, search_city(first_let))
+    bot_city, lat_bot, lon_bot = search_city(first_let)
+    bot.send_message(message.from_user.id, bot_city)
+    bot.send_location(message.from_user.id, lat_bot, lon_bot)
     print(old_cities)
 
 
@@ -49,7 +52,7 @@ def search_city(first_let):
         for c in bot_city:
             if c and c[0] == first_let.upper()[0] and c.lower() not in old_cities:
                 old_cities.append(c.lower())
-                return c
+                return c, all_cities[cities]["latitude"], all_cities[cities]["longitude"]
 
 
 bot.infinity_polling(timeout=20)
