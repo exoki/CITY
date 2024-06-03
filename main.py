@@ -6,6 +6,11 @@ import pyautogui
 from IDTOKEN import *
 import geonamescache
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
+import requests
+import wikipedia
+
+YOUR_API_KEY = "f31f5209-62cd-4326-9606-5b7cddc39993"
+
 
 bot = telebot.TeleBot(TOKEN)
 gc = geonamescache.GeonamesCache()
@@ -13,6 +18,16 @@ all_cities = gc.get_cities()
 
 players = {}
 old_cities = []
+
+
+def weather(latitude, longitude):
+    answer = requests.get(f"http://api.airvisual.com/v2/nearest_city?lat={latitude}&lon={longitude}&key={YOUR_API_KEY}")
+    result = answer.json()
+    aqius = result["data"]["current"]["pollution"]["aqius"]
+    hu = result["data"]["current"]["weather"]["hu"]
+    tp = result["data"]["current"]["weather"]["tp"]
+    ws = result["data"]["current"]["weather"]["ws"]
+    return aqius, hu, tp, ws
 
 
 @bot.message_handler(commands=["start", "help"])
@@ -35,13 +50,19 @@ def start_chatting(message):
             return
     old_cities.append(player_city)
     bot.send_location(message.from_user.id, founded[0]["latitude"], founded[0]["longitude"])
+    aqius, hu, tp, ws = weather(founded[0]["latitude"], founded[0]["longitude"])
     first_let = player_city[-1]
 
     if first_let == "ь" or first_let == "ы" or first_let == "ъ":
         first_let = player_city[-2]
+
+    bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
     bot.send_message(message.from_user.id, f"Мне на {first_let}")
+
     bot_city, lat_bot, lon_bot = search_city(first_let)
+    aqius, hu, tp, ws = weather(lat_bot, lon_bot)
     bot.send_message(message.from_user.id, bot_city)
+    bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
     bot.send_location(message.from_user.id, lat_bot, lon_bot)
     print(old_cities)
 
