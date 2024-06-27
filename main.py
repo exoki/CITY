@@ -1,4 +1,5 @@
 from pprint import pprint
+from datetime import datetime
 
 import telebot
 import random
@@ -8,6 +9,8 @@ import geonamescache
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 import requests
 import wikipedia
+import sqlite3
+
 
 YOUR_API_KEY = "f31f5209-62cd-4326-9606-5b7cddc39993"
 
@@ -18,6 +21,25 @@ all_cities = gc.get_cities()
 
 players = {}
 old_cities = []
+
+
+def base():
+    with sqlite3.connect("filename.db") as f:
+        cursor = f.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS yeat(ID INTEGER, NAME TEXT, USERNAME TEXT, DATE INTEGER)")
+
+
+base()
+
+
+def get_players(ID, NAME, USERNAME, DATE):
+    with sqlite3.connect("filename.db") as f:
+        cursor = f.cursor()
+        cursor.execute("""SELECT * FROM yeat WHERE ID =?""", (ID,))
+        idbase = cursor.fetchone()
+        if idbase is None:
+            cursor.execute("""INSERT INTO yeat(ID, NAME, USERNAME, DATE) VALUES(?,?,?,?)""", (ID, NAME, USERNAME, DATE))
+        f.commit()
 
 
 def weather(latitude, longitude):
@@ -33,6 +55,8 @@ def weather(latitude, longitude):
 @bot.message_handler(commands=["start", "help"])
 def start_command(message):
     bot.send_message(message.from_user.id, "Hi")
+    print(message.from_user)
+    get_players(ID=message.from_user.id, NAME=message.from_user.first_name, USERNAME=message.from_user.username, DATE=datetime.now())
 
 
 @bot.message_handler(content_types=["text"])
@@ -79,11 +103,10 @@ def search_city(first_let):
 bot.infinity_polling(timeout=20)
 
 """
-Загуглить: "как обработать геолокацию в телебот пайтон" (чекнуть видосик на ютубе 5-и минутный)
-Нужно реализовать так:
-зайти с телефона и отправить гео в бота, а он должен просто отпринтовать координаты
+Сделать функцию для сброса городов
+Сделать функцию, которая напомнит на какую букву нужно говорить (если это вообще надо ахаха)
+Не забыть бота на серваке оффнуть, если будешь делать что0то здесь)
 
-2. сделать так, чтобы бот сам отправлял рандомную локацию)
 
 
 """
