@@ -45,11 +45,21 @@ def get_players(ID, NAME, USERNAME, DATE):
 def weather(latitude, longitude):
     answer = requests.get(f"http://api.airvisual.com/v2/nearest_city?lat={latitude}&lon={longitude}&key={YOUR_API_KEY}")
     result = answer.json()
-    aqius = result["data"]["current"]["pollution"]["aqius"]
-    hu = result["data"]["current"]["weather"]["hu"]
-    tp = result["data"]["current"]["weather"]["tp"]
-    ws = result["data"]["current"]["weather"]["ws"]
-    return aqius, hu, tp, ws
+    try:
+        aqius = result["data"]["current"]["pollution"]["aqius"]
+        hu = result["data"]["current"]["weather"]["hu"]
+        tp = result["data"]["current"]["weather"]["tp"]
+        ws = result["data"]["current"]["weather"]["ws"]
+        return aqius, hu, tp, ws
+    except KeyError:
+        print(result)
+        return None, None, None, None
+
+
+@bot.message_handler(commands=["game"])
+def game(message):
+    city, lat, long = search_city(random.choice(list("абвгдеёжзийклмнопрстуфхцчшщыэюя")))
+    bot.send_message(message.from_user.id, city)
 
 
 @bot.message_handler(commands=["start", "help"])
@@ -80,14 +90,19 @@ def start_chatting(message):
     if first_let == "ь" or first_let == "ы" or first_let == "ъ":
         first_let = player_city[-2]
 
-    bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
+    if aqius is not None:
+        bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
+
     bot.send_message(message.from_user.id, f"Мне на {first_let}")
 
     bot_city, lat_bot, lon_bot = search_city(first_let)
     aqius, hu, tp, ws = weather(lat_bot, lon_bot)
     bot.send_message(message.from_user.id, bot_city)
-    bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
+    if aqius is not None:
+        bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
     bot.send_location(message.from_user.id, lat_bot, lon_bot)
+    wikipedia.set_lang("ru")
+    bot.send_message(message.from_user.id, wikipedia.summary(player_city))
     print(old_cities)
 
 
@@ -100,7 +115,7 @@ def search_city(first_let):
                 return c, all_cities[cities]["latitude"], all_cities[cities]["longitude"]
 
 
-bot.infinity_polling(timeout=20)
+bot.infinity_polling(timeout=20, skip_pending=True)
 
 """
 Сделать функцию для сброса городов
