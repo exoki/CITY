@@ -11,9 +11,8 @@ import requests
 import wikipedia
 import sqlite3
 
-
 YOUR_API_KEY = "f31f5209-62cd-4326-9606-5b7cddc39993"
-
+API_KEY = "NXr4t-9WS1G_jW9GSFFx1YzkxcVAtDXVRe43rH5mEuU"
 
 bot = telebot.TeleBot(TOKEN)
 gc = geonamescache.GeonamesCache()
@@ -66,7 +65,8 @@ def game(message):
 def start_command(message):
     bot.send_message(message.from_user.id, "Hi")
     print(message.from_user)
-    get_players(ID=message.from_user.id, NAME=message.from_user.first_name, USERNAME=message.from_user.username, DATE=datetime.now())
+    get_players(ID=message.from_user.id, NAME=message.from_user.first_name, USERNAME=message.from_user.username,
+                DATE=datetime.now())
 
 
 @bot.message_handler(content_types=["text"])
@@ -102,7 +102,21 @@ def start_chatting(message):
         bot.send_message(message.from_user.id, f"aAQI: {aqius} \nTemp: {tp} \nWS: {ws} \nHU: {hu}")
     bot.send_location(message.from_user.id, lat_bot, lon_bot)
     wikipedia.set_lang("ru")
-    bot.send_message(message.from_user.id, wikipedia.summary(player_city))
+    wiki = wikipedia.summary(player_city)
+
+    link = f'https://api.unsplash.com/search/photos?query={player_city}&client_id={API_KEY}&per_page=20'
+    response = requests.get(link)
+    rint = response.json()
+    photo = []
+    for r in rint["results"]:
+        photo.append(r["urls"]["full"])
+    if not wiki and photo:
+        bot.send_photo(message.from_user.id, random.choice(photo))
+    elif wiki and photo:
+        bot.send_photo(message.from_user.id, random.choice(photo), caption=wiki[:1023])
+    elif wiki and not photo:
+        bot.send_message(message.from_user.id, wiki)
+
     print(old_cities)
 
 
@@ -116,12 +130,3 @@ def search_city(first_let):
 
 
 bot.infinity_polling(timeout=20, skip_pending=True)
-
-"""
-Сделать функцию для сброса городов
-Сделать функцию, которая напомнит на какую букву нужно говорить (если это вообще надо ахаха)
-Не забыть бота на серваке оффнуть, если будешь делать что0то здесь)
-
-
-
-"""
